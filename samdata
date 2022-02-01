@@ -1,0 +1,155 @@
+""" Filter PIRL columns for SAM. Calculate values for STATA. Must adjust paths for read_csv() to_csv() """
+
+import pandas as pd
+import numpy as np
+
+pirl4sam = pd.read_csv('/home/terence/sam/pirl18t1.csv',
+                       usecols=['100', '101', '102', '200', '201', '202', '210', '211', '212', '213',
+                                '214', '215', '300', '301', '302', '303', '304', '305', '306', '307',
+                                '308', '400', '401', '402', '407', '408', '409', '410', '411', '412',
+                                '413', '600', '601', '602', '603', '604', '701', '702', '704', '800',
+                                '801', '802', '803', '804', '805', '806', '807', '808', '900', '901',
+                                '902', '903', '904', '905', '906', '907', '908', '909', '910', '911',
+                                '913', '914', '915', '916', '917', '918', '919', '920', '921',
+                                '922', '923', '924', '925', '926', '927', '928', '929', '930', '931',
+                                '932', '933', '934', '935', '936', '937', '938', '939', '940',
+                                '1302', '1306', '1307', '1308', '1309', '1310', '1311', '1312',
+                                '1313', '1314', '1315', '1316', '1317', '1318', '1319', '1320',
+                                '1321', '1322', '1323', '1324', '1325', '1326', '1327', '1328',
+                                '1329', '1330', '1331', '1332', '1333', '1401', '1402', '1403',
+                                '1405', '1406', '1407', '1408', '1409', '1410', '1411', '1412',
+                                '1413', '1414', '1415', '1416', '1600', '1601', '1602', '1603',
+                                '1604', '1605', '1606', '1607', '1608', '1609', '1610', '1611',
+                                '1612', '1613', '1614', '1615', '1616', '1617', '1618', '1700',
+                                '1701', '1702', '1703', '1704', '1705', '1706', '1800', '1801',
+                                '1802', '1803', '1804', '1805', '1806', '1807', '1808', '1809',
+                                '1810', '1811', '1812', '1813', '1814', '1900', '1901', '1902',
+                                '1903', '1904', '1905', '1906', '1907', '1908', '2001', '2002',
+                                '2003', '2004', '2701', '2702'],
+                       parse_dates=['200', '900', '901', '1801', '1803', '1805', '1806', '1807',
+                                    '1808', '1809', '1810'],
+                       nrows=5000)
+
+# Q1: How to ensure dates aren't imported as float in PIRL 200, 900, 901, 1801, 1803, 1805....?
+# A1: Use ', parse_dates=' in read_csv(). Note: Importing 'datetime' not needed
+
+# Q2: How to calculate years between 2 dates & show in a new column?
+# A2: Use Numpy np.timedelta64(1,'Y') function as denominator for difference between PIRL 900 & 200
+
+pirl4sam['age'] = pirl4sam['900'] - pirl4sam['200']
+pirl4sam['age'] = pd.Series(pirl4sam['age']/np.timedelta64(1,'Y')).round()
+
+# BARRIERS
+# To evaluate over/under 55: 1) Create BOOLEAN VALUE, then 2) .map() BOOLEAN to 1 or 0 using a dictionary
+
+pirl4sam['ovr55'] = pirl4sam['age'] > 54
+pirl4sam['ovr55'] = pirl4sam['ovr55'].map({True: '1', False: '0'})
+
+pirl4sam['loinc'] = pirl4sam['802'] > 0
+pirl4sam['loinc'] = pirl4sam['loinc'].map({True: '1', False: '0'})
+
+pirl4sam['ltu'] = pirl4sam['402'] > 0
+pirl4sam['ltu'] = pirl4sam['ltu'].map({True: '1', False: '0'})
+
+pirl4sam['notwh'] = ((pirl4sam['210'] == 1) |
+                     (pirl4sam['211'] == 1) |
+                     (pirl4sam['212'] == 1) |
+                     (pirl4sam['213'] == 1) |
+                     (pirl4sam['214'] == 1))
+pirl4sam['notwh'] = pirl4sam['notwh'].map({True: '1', False: '0'})
+
+pirl4sam['lolit'] = ((pirl4sam['803'] == 1) | (pirl4sam['804'] == 1))
+pirl4sam['lolit'] = pirl4sam['lolit'].map({True: '1', False: '0'})
+
+pirl4sam['xoff'] = pirl4sam['801'] > 0
+pirl4sam['xoff'] = pirl4sam['xoff'].map({True: '1', False: '0'})
+
+pirl4sam['fost'] = pirl4sam['704'] > 0
+pirl4sam['fost'] = pirl4sam['fost'].map({True: '1', False: '0'})
+
+pirl4sam['disab'] = ((pirl4sam['202'] == 1) | (pirl4sam['303'] == 1) | (pirl4sam['303'] == 2))
+pirl4sam['disab'] = pirl4sam['disab'].map({True: '1', False: '0'})
+
+pirl4sam['hmls'] = pirl4sam['800'] > 0
+pirl4sam['hmls'] = pirl4sam['hmls'].map({True: '1', False: '0'})
+
+pirl4sam['pregpar'] = ((pirl4sam['701'] > 0) | (pirl4sam['806'] > 0))
+pirl4sam['pregpar'] = pirl4sam['pregpar'].map({True: '1', False: '0'})
+
+
+for ind, row in pirl4sam.iterrows():
+    pirl4sam.loc[ind, 'barnum'] = int(row['ovr55']) + int(row['loinc']) + int(row['ltu']) + \
+                                  int(row['notwh']) + int(row['lolit']) + int(row['xoff']) + \
+                                  int(row['fost']) + int(row['disab']) + int(row['hmls']) + \
+                                  int(row['pregpar'])
+
+pirl4sam['barrier'] = pirl4sam['barnum'] > 1
+pirl4sam['barrier'] = pirl4sam['barrier'].map({True: '1', False: '0'})
+
+# MSG
+
+msglo = '20190701'
+msghi = '20200630'
+msglow = pd.to_datetime(msglo)
+msghigh = pd.to_datetime(msghi)
+print(msglow)
+print(msghigh)
+
+pirl4sam['msgefl'] = ((pirl4sam['1806'] > msglow) & (pirl4sam['1806'] < msghigh))
+pirl4sam['msgefl'] = pirl4sam['msgefl'].map({True: '1', False: '0'})
+
+pirl4sam['msgpost'] = ((pirl4sam['1807'] > msglow) & (pirl4sam['1807'] < msghigh))
+pirl4sam['msgpost'] = pirl4sam['msgpost'].map({True: '1', False: '0'})
+
+pirl4sam['msg2nd'] = ((pirl4sam['1808'] > msglow) & (pirl4sam['1808'] < msghigh))
+pirl4sam['msg2nd'] = pirl4sam['msg2nd'].map({True: '1', False: '0'})
+
+pirl4sam['msgmile'] = ((pirl4sam['1809'] > msglow) & (pirl4sam['1809'] < msghigh))
+pirl4sam['msgmile'] = pirl4sam['msgmile'].map({True: '1', False: '0'})
+
+pirl4sam['msgskll'] = ((pirl4sam['1810'] > msglow) & (pirl4sam['1810'] < msghigh))
+pirl4sam['msgskll'] = pirl4sam['msgskll'].map({True: '1', False: '0'})
+
+pirl4sam['msgdp1'] = ((pirl4sam['1800'] == 1) &
+                      ((pirl4sam['1801'] > msglow) & (pirl4sam['1801'] < msghigh)))
+pirl4sam['msgdp1'] = pirl4sam['msgdp1'].map({True: '1', False: '0'})
+
+pirl4sam['msgdp2'] = ((pirl4sam['1802'] == 1) &
+                      ((pirl4sam['1803'] > msglow) & (pirl4sam['1803'] < msghigh)))
+pirl4sam['msgdp2'] = pirl4sam['msgdp2'].map({True: '1', False: '0'})
+
+pirl4sam['msgdp3'] = ((pirl4sam['1804'] == 1) &
+                      ((pirl4sam['1805'] > msglow) & (pirl4sam['1805'] < msghigh)))
+pirl4sam['msgdp3'] = pirl4sam['msgdp3'].map({True: '1', False: '0'})
+
+for ind, row in pirl4sam.iterrows():
+    pirl4sam.loc[ind, 'msginpy'] = int(row['msgefl']) + int(row['msgpost']) + int(row['msg2nd']) + \
+                                  int(row['msgmile']) + int(row['msgskll']) + int(row['msgdp1']) + \
+                                  int(row['msgdp2']) + int(row['msgdp3'])
+
+pirl4sam['msginpy'] = pirl4sam['msginpy'] > 0
+pirl4sam['msginpy'] = pirl4sam['msginpy'].map({True: '1', False: '0'})
+
+# CREDENTIALS
+
+pirl4sam['xtplus1'] = pirl4sam['901'] + pd.offsets.DateOffset(years=1)
+
+pirl4sam['cred1'] = (pirl4sam['1800'] > 1) & (pirl4sam['901'] != '') & \
+                    ((pirl4sam['1801'] >= pirl4sam['900']) & (pirl4sam['1801'] <= pirl4sam['xtplus1']))
+pirl4sam['cred1'] = pirl4sam['cred1'].map({True: '1', False: '0'})
+
+pirl4sam['cred2'] = (pirl4sam['1802'] > 1) & (pirl4sam['901'] != '') & \
+                    ((pirl4sam['1803'] >= pirl4sam['900']) & (pirl4sam['1803'] <= pirl4sam['xtplus1']))
+pirl4sam['cred2'] = pirl4sam['cred2'].map({True: '1', False: '0'})
+
+pirl4sam['cred3'] = (pirl4sam['1804'] > 1) & (pirl4sam['901'] != '') & \
+                    ((pirl4sam['1805'] >= pirl4sam['900']) & (pirl4sam['1805'] <= pirl4sam['xtplus1']))
+pirl4sam['cred3'] = pirl4sam['cred3'].map({True: '1', False: '0'})
+
+for ind, row in pirl4sam.iterrows():
+    pirl4sam.loc[ind, 'credent'] = int(row['cred1']) + int(row['cred2']) + int(row['cred3'])
+pirl4sam['credent'] = pirl4sam['credent'] > 0
+pirl4sam['credent'] = pirl4sam['credent'].map({True: '1', False: '0'})
+# print(pirl4sam['credent'].to_string())
+
+pirl4sam.to_csv('/home/terence/sam/pirl4sam.csv')
