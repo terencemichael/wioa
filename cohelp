@@ -1,0 +1,41 @@
+# !!! FOR BACKUP ONLY - MUST ADJUST CODE FOR PRINT STATEMENTS & FILE LOCATIONS
+
+import pandas as pd
+
+frcc_in = pd.read_csv('pirl-report-270-q2-2021-frcc.csv',
+                      skiprows=[1]
+                      )
+print('frcc data source\n')
+
+frcc_in['DE2700'] = frcc_in['DE2700'].astype(str).str[0:9]  # !!! IMPORTANT CLEAN-UP STEP PRE-MERGE !!!
+    # 1) converts datatype to str
+    # 2) ensures there are no leading/trailing spaces or hidden characters
+print(frcc_in.columns)
+print(frcc_in.shape)
+print(frcc_in.dtypes)
+
+
+acc_in = pd.read_csv('pirl-report-271-q2-2021-acc.csv',
+                     skiprows=[1]
+                     )
+print('acc data source\n')
+acc_in['DE2700'] = acc_in['DE2700'].astype(str).str[0:9]  # !!! IMPORTANT CLEAN-UP STEP PRE-MERGE !!!
+
+
+jl_in = pd.read_csv('cohelpreg.csv',
+                    parse_dates=['stdt', 'endt'],
+                    usecols=['match', 'rgn', 'svc', 'stdt', 'endt', 'empstat',
+                             'ltu', 'hsgrad', 'edulvl', 'exoff', 'lowad',
+                             'lowyt', 'dlw', 'xrsn', 'underemp']
+                    )
+jl_in['match'] = jl_in['match'].astype(str).str[0:9]  # !!! IMPORTANT CLEAN-UP STEP PRE-MERGE !!!
+
+jl_in['stdt'] = jl_in['stdt'].astype(str).str[4:8] + jl_in['stdt'].astype(str).str[0:4]
+jl_in['endt'] = jl_in['endt'].astype(str).str[4:8] + jl_in['endt'].astype(str).str[0:4]
+print(jl_in.dtypes)
+
+q2_2021_frcc_plus = pd.merge(frcc_in, jl_in, left_on='DE2700', right_on='match', how='left')
+q2_2021_frcc_plus.to_csv('q2_2021_frcc_plus.csv')
+
+q2_2021_acc_plus = pd.merge(acc_in, jl_in, left_on='DE2700', right_on='match', how='left')
+q2_2021_acc_plus.to_csv('q2_2021_acc_plus.csv')
