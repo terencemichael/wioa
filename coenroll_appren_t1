@@ -1,0 +1,11 @@
+import pandas as pd
+
+df = pd.read_csv('~/Documents/wk/data/COENR_AEID_WIOA.csv', dtype=object)
+df.columns = ["msk", "last", "area", "pgrm", "subp", "stdt", "endt", "agent", "test", "ignore"]
+print(df.to_string())
+f_notest = df["test"] != "Y"
+df = df[f_notest]
+
+dfcrs = pd.crosstab(df["msk"], df["pgrm"])
+print(dfcrs)
+dfcrs.to_csv('~/Documents/wk/data/coenrollments.csv')
