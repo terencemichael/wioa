@@ -8,7 +8,7 @@ dfr = pd.read_csv("~/Documents/wk/PIRL/pirl21_py20q1.csv",
                            '1800', '1801', '1802', '1803',
                            '1804', '1805', '1806', '1807', '1808', '1809',
                            '1810', '1811', '1900', '1901'],
-                  dtype=object,  # retains leading zeros in a .csv
+                  dtype=object,  # retains leading zeros in .csv...also handles datatype mismatches w/in same column
                   parse_dates=['900', '901', '1406', '1801', '1803', '1805',
                                '1806', '1807', '1808', '1809', '1810']
                   # nrows=100000
