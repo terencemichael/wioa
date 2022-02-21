@@ -1,11 +1,31 @@
+# show AE/ID coenrolled w Title I, then exit date miss-matches
+# uses: filtering, .astype(str), df column subset, .crosstab(), .fillna() for NaN, .merge()
+
 import pandas as pd
 
 df = pd.read_csv('~/Documents/wk/data/COENR_AEID_WIOA.csv', dtype=object)
 df.columns = ["msk", "last", "area", "pgrm", "subp", "stdt", "endt", "agent", "test", "ignore"]
+df = df[df['test'] != 'Y']
+
+df['stdt'] = df['stdt'].astype(str).str[4:8] + df['stdt'].astype(str).str[0:4]
+df['endt'] = df['endt'].astype(str).str[4:8] + df['endt'].astype(str).str[0:4]
 print(df.to_string())
-f_notest = df["test"] != "Y"
-df = df[f_notest]
+
+ae = df[df['pgrm'] == 'AE']
+ae_stdt_endt = ae[['msk', 'pgrm', 'subp', 'stdt', 'endt']]
+
+wioa = df[(df['pgrm'] == 'AD') | (df['pgrm'] == 'DW') | (df['pgrm'] == 'YT')]
+wioa_stdt_endt = wioa[['msk', 'pgrm', 'subp', 'stdt', 'endt']]
 
 dfcrs = pd.crosstab(df["msk"], df["pgrm"])
 print(dfcrs)
-dfcrs.to_csv('~/Documents/wk/data/coenrollments.csv')
+dfcrs.to_csv('~/Documents/wk/reports/coenroll.csv')
+
+mrg1 = dfcrs.merge(ae_stdt_endt, left_on='msk', right_on='msk', how='left')
+mrg2 = mrg1.merge(wioa_stdt_endt, left_on='msk', right_on='msk', how='left')
+mrg2['endt_y'].fillna(value=' ', inplace=True)  # REPLACES 'NaN' with ' '. NOTICE SINGLE SPACE !!!
+
+# create column showing message for end date missmatch
+boo01 = (mrg2['endt_x'] == mrg2['endt_y'])
+mrg2['exits_match'] = boo01.map({True: 'Yes', False: 'No'})
+print(mrg2.to_string())
