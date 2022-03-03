@@ -27,5 +27,13 @@ mrg2['endt_y'].fillna(value=' ', inplace=True)  # REPLACES 'NaN' with ' '. NOTIC
 
 # create column showing message for end date missmatch
 boo01 = (mrg2['endt_x'] == mrg2['endt_y'])
-mrg2['exits_match'] = boo01.map({True: 'Yes', False: 'No'})
+mrg2['exits_match'] = boo01.map({True: ' ', False: 'No'})
+mrg2.rename(columns={'pgrm_x': 'app_pgrm', 'subp_x': 'app_subp', 'stdt_x': 'app_stdt',
+                     'endt_x': 'app_endt', 'pgrm_y': 't1_pgrm', 'subp_y': 't1_subp',
+                     'stdt_y': 't1_stdt', 'endt_y': 't1_endt'}, inplace=True)
+mrg2['t1_pgrm'].fillna(value=' ', inplace=True)
+mrg2['t1_subp'].fillna(value=' ', inplace=True)
+mrg2['t1_stdt'].fillna(value=' ', inplace=True)
 print(mrg2.to_string())
+mrg2.to_csv('~/Documents/wk/reports/coenroll_full.csv')
+
