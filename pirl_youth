@@ -1,0 +1,17 @@
+from column_headers import pirl21_full
+
+import pandas as pd
+
+pirl = pd.read_csv('~/Documents/wk/data/pirl21_py21q2.csv', dtype=object
+                   # , nrows=50000
+                   )
+pirl.columns = pirl21_full
+# print(pirl.shape)
+
+youth = (pirl['905'] == '1') | (pirl['905'] == '2') | (pirl['905'] == '3') | (pirl['905'] == '4')
+
+pirl_youth = pirl[youth]
+# print(pirl_youth.shape)
+
+pirl_youth.to_csv('~/Documents/wk/reports/pirl_youth.csv')
+
