@@ -1,0 +1,94 @@
+# BACKUP FILE....YOU MUST ADJUST CODE FOR JUPYTER (ie: print statements & 
+# csv import/exports)
+
+# Filter SAE5 output & calculate stats for SAE Quarterly
+import pandas as pd
+import numpy as np
+from datetime import datetime
+
+qtrstdt = '20210401'
+qtrstdt = pd.to_datetime(qtrstdt)
+
+
+temp1 = pd.read_csv('/home/terence/SAE/t1svc.csv', usecols=['msk', 'rgn', 'svc', 'stdt',
+                                                            'endt', 'prj', 'onet', 'school',
+                                                            'pgm', 'succ'],
+                    parse_dates=['stdt', 'endt'],       # parse_dates= retained leading 0's ...nice!
+                    na_filter=True
+                    )
+
+# Flip T1SVC dates...convert to datetime format...wait unitl after the merge for age calcs
+temp1['stdtfl'] = temp1['stdt'].astype(str).str[4:8] + temp1['stdt'].astype(str).str[0:4]
+temp1['endtfl'] = temp1['endt'].astype(str).str[4:8] + temp1['endt'].astype(str).str[0:4]
+temp1['stdtfl'] = pd.to_datetime(temp1['stdtfl'])
+temp1['endtfl'] = pd.to_datetime(temp1['endtfl'], errors='coerce')   #coerce converts missing values to NaT vs crashing
+    # had to manually add headers: msk,rgn,svc,stdt,endt,prj,agent,onet,school,pgm,succ,
+
+
+temp2 = pd.read_csv('/home/terence/SAE/t1dem.csv',
+                    usecols=['msk', 'sex', 'bthdt', 'disab', 'vet', 'hisp', 'black',
+                             'asian', 'india', 'paci', 'white'],
+                    parse_dates=['bthdt'])
+
+# Flip T1DEM dates...convert to datetime format...after the merge run age calculations
+temp2['bthdtfl'] = temp2['bthdt'].astype(str).str[4:8] + temp2['bthdt'].astype(str).str[0:4]
+    # had to manually add headers: msk,sex,bthdt,disab,vet,hisp,black,asian,india,paci,white,
+
+# Crosstab temp1 then merge SVC & DEM files
+
+temp12crs = pd.crosstab(temp1['msk'], temp1['svc'])
+temp12 = temp2.merge(temp12crs, left_on='msk', right_on='msk')
+temp12['bthdtfl'] = pd.to_datetime(temp12['bthdtfl'])
+
+# Calculate age for merged file
+
+temp12['age'] = qtrstdt - temp12['bthdtfl']
+temp12['age'] = pd.Series(temp12['age']/np.timedelta64(1, 'Y')).round()
+
+# Calculate train, supp, acpa, OJ
+
+temp12['train'] = ((temp12['AB'] > 0) | (temp12['AC'] > 0) | (temp12['AS'] > 0) | (temp12['BS'] > 0) |
+                   (temp12['DO'] > 0) | (temp12['DP'] > 0) | (temp12['EW'] > 0) | (temp12['OC'] > 0))
+temp12['train'] = temp12['train'].map({True: 'Y', False: 'N'})
+
+temp12['supp'] = ((temp12['CO'] > 0) | (temp12['HM'] > 0) | (temp12['RA'] > 0) |
+                  (temp12['SS'] > 0) | (temp12['TR'] > 0))
+temp12['supp'] = temp12['supp'].map({True: 'Y', False: 'N'})
+
+temp12['acpa'] = ((temp12['AC'] > 0) | (temp12['PA'] > 0))
+temp12['acpa'] = temp12['acpa'].map({True: 'Y', False: 'N'})
+
+temp12['ojt'] = ((temp12['OJ'] > 0))
+temp12['ojt'] = temp12['ojt'].map({True: 'Y', False: 'N'})
+
+temp12.to_csv('/home/terence/SAE/SAE_T1_nov16-jun21.csv')
+print(temp12.to_string())
+
+print('\nPeople')
+print(temp12['msk'].count())
+print('\nMale/Female')
+print(temp12['sex'].value_counts())
+print('\nDisability')
+print(temp12['disab'].value_counts())
+print('\nVet Status')
+print(temp12['vet'].value_counts())
+print('\nEthnicity')
+print(temp12['hisp'].value_counts())
+print('\nBlack')
+print(temp12['black'].value_counts())
+print('\nAsian')
+print(temp12['asian'].value_counts())
+print('\nAmerican Indian')
+print(temp12['india'].value_counts())
+print('\nHawaiian / Pacific Islander')
+print(temp12['paci'].value_counts())
+print('\nWhite')
+print(temp12['white'].value_counts())
+print('\nTraining')
+print(temp12['train'].value_counts())
+print('\nSupportive')
+print(temp12['supp'].value_counts())
+print('\nAC or PA service')
+print(temp12['acpa'].value_counts())
+print('\nOJT')
+print(temp12['ojt'].value_counts())
