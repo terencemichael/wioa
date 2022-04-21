@@ -1,0 +1,20 @@
+import pandas as pd
+
+swis = pd.read_csv('~/Documents/wk/data/co_swis_py21q3.dat', 
+                   dtype=object)
+swis.columns = ['id']                                       # add column label
+swis['id'] = swis['id'].astype(str).str[0:9]                # only take 9 char of column    
+
+swis.sort_values(by=['id'], inplace=True)                   # sort for quality check
+print(swis.shape)
+
+swis['nmrc'] = swis['id'].str.isnumeric()                   # new col to evaluate numeric
+swis['nmrc'] = swis['nmrc'].map({True: 1, False: 0})        # set value to 1 or 0
+f_nmrc = (swis['nmrc'] == 1)                                # create filter for true
+swis = swis[f_nmrc]                                         # apply filter
+
+swis['id'] = swis['id'].str.replace(' ', '0')               # replace blank spaces w '0'
+print(swis.head(15))                                        # quality check printout
+print(swis.shape)
+swis = swis.loc[:, 'id']                                    # reduce to named cols, show all rows
+swis.to_csv('~/Documents/wk/reports/co_swis_py21q3_out.dat')
