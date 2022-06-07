@@ -1,0 +1,179 @@
+""" Filter PIRL columns for SAM. Calculate values for STATA. Must adjust paths for read_csv() to_csv()
+    pandas, import cols from external file, select columns 2 keep by name,
+    dtype=object, pd.to_datetime(), boolean tests, .map(), call dict keys, call dict values, for loop,
+    .iterrows(), pd.Series(), np.timedelta64(1, 'Y'), .round(), f('path/filename{x}.csv')
+    """
+from column_headers import pirl21_full
+import pandas as pd
+import numpy as np
+
+pirl = pd.read_csv('~/Documents/wk/data/pirl21t1_py20.csv', dtype=object, header=None, nrows=20000)
+
+pirl.columns = pirl21_full
+
+pirl4sam = pirl[['p100', '101', '102', '108A',
+                 '200', '201', '202', '210', '211', '212', '213', '214', '215',
+                 '300', '301', '302', '303', '304', '305', '306', '307',
+                 '400', '401', '402', '407', '408', '409', '410', '411', '412',
+                 '413', '600', '601', '602', '603', '604', '701', '702', '704', '800',
+                 '801', '802', '803', '804', '805', '806', '807', '808', '900', '901',
+                 '902', '903', '904', '905', '906', '907', '908', '909', '910', '911',
+                 '913', '914', '915', '916', '917', '918', '919', '920', '921',
+                 '922', '923', '924', '925', '926', '927', '928', '929', '930', '931',
+                 '932', '933', '934', '935', '936', '937', '938', '939', '940',
+                 '1302', '1306', '1307', '1308', '1309', '1310', '1311', '1312',
+                 '1313', '1314', '1315', '1316', '1317', '1318', '1319', '1320',
+                 '1321', '1322', '1323', '1324', '1325', '1326', '1327', '1328',
+                 '1329', '1330', '1331', '1332', '1333', '1401', '1402', '1403',
+                 '1405', '1406', '1407', '1408', '1409', '1410', '1411', '1412',
+                 '1413', '1414', '1415', '1416', '1600', '1601', '1602', '1603',
+                 '1604', '1605', '1606', '1607', '1608', '1609', '1610', '1611',
+                 '1612', '1613', '1614', '1615', '1616', '1617', '1618', '1700',
+                 '1701', '1702', '1703', '1704', '1705', '1706', '1800', '1801',
+                 '1802', '1803', '1804', '1805', '1806', '1807', '1808', '1809',
+                 '1810', '1811', '1812', '1813', '1814', '1900', '1901', '1902',
+                 '1903', '1904', '1905', '1906', '1907', '1908', '2001', '2002',
+                 '2003', '2004', '2701', '2702']]
+
+
+# Q1: How to ensure dates aren't imported as float in PIRL 200, 900, 901, 1801, 1803, 1805....?
+# A1: Use ', parse_dates=' in read_csv(). Note: Importing 'datetime' not needed
+
+# Q2: How to calculate years between 2 dates & show in a new column?
+# A2: Use Numpy np.timedelta64(1,'Y') function as denominator for difference between PIRL 900 & 200
+
+pirl4sam['200'] = pd.to_datetime(pirl4sam['200'])
+pirl4sam['900'] = pd.to_datetime(pirl4sam['900'])
+pirl4sam['901'] = pd.to_datetime(pirl4sam['901'])
+pirl4sam['1801'] = pd.to_datetime(pirl4sam['1801'])
+pirl4sam['1803'] = pd.to_datetime(pirl4sam['1803'])
+pirl4sam['1805'] = pd.to_datetime(pirl4sam['1805'])
+pirl4sam['1806'] = pd.to_datetime(pirl4sam['1806'])
+pirl4sam['1807'] = pd.to_datetime(pirl4sam['1807'])
+pirl4sam['1808'] = pd.to_datetime(pirl4sam['1808'])
+pirl4sam['1809'] = pd.to_datetime(pirl4sam['1809'])
+pirl4sam['1810'] = pd.to_datetime(pirl4sam['1810'])
+
+areas = {'08070': 'AD', '08010': 'AR', '08015': 'BO', '08025': 'DE', '08060': 'ET',
+         '08035': 'LR', '08085': 'ME', '08030': 'TR', '08080': 'RC', '08045': 'WL'}
+
+for x in areas:
+    pirlarea = pirl4sam[pirl4sam['108A'] == x]
+
+    pirlarea['age'] = pirlarea['900'] - pirlarea['200']
+    pirlarea['age'] = pd.Series(pirlarea['age'] / np.timedelta64(1, 'Y')).round()
+
+# BARRIERS
+# To evaluate over/under 55: Create BOOLEAN VALUE, then .map() BOOLEAN to 1 or 0 using dictionary
+
+    boo01 = pirlarea['age'] > 54
+    pirlarea['ovr55'] = boo01.map({True: '1', False: '0'})
+
+    boo02 = pirlarea['802'] == '1'
+    pirlarea['loinc'] = boo02.map({True: '1', False: '0'})
+
+    boo03 = pirlarea['402'] == '1'
+    pirlarea['ltu'] = boo03.map({True: '1', False: '0'})
+
+    boo04 = ((pirlarea['210'] == '1') |
+             (pirlarea['211'] == '1') |
+             (pirlarea['212'] == '1') |
+             (pirlarea['213'] == '1') |
+             (pirlarea['214'] == '1'))
+    pirlarea['notwh'] = boo04.map({True: '1', False: '0'})
+
+    boo05 = ((pirlarea['803'] == '1') | (pirlarea['804'] == '1'))
+    pirlarea['lolit'] = boo05.map({True: '1', False: '0'})
+
+    boo06 = pirlarea['801'] == '1'
+    pirlarea['xoff'] = boo06.map({True: '1', False: '0'})
+
+    boo07 = pirlarea['704'] == '1'
+    pirlarea['fost'] = boo07.map({True: '1', False: '0'})
+
+    boo08 = ((pirlarea['202'] == '1') | (pirlarea['303'] == '1') | (pirlarea['303'] == '2'))
+    pirlarea['disab'] = boo08.map({True: '1', False: '0'})
+
+    boo09 = pirlarea['800'] == '1'
+    pirlarea['hmls'] = boo09.map({True: '1', False: '0'})
+
+    boo10 = ((pirlarea['701'] == '1') | (pirlarea['806'] == '1'))
+    pirlarea['pregpar'] = boo10.map({True: '1', False: '0'})
+
+    for ind, row in pirlarea.iterrows():
+        pirlarea.loc[ind, 'barnum'] = int(row['ovr55']) + int(row['loinc']) + int(row['ltu']) + \
+                                      int(row['notwh']) + int(row['lolit']) + int(row['xoff']) + \
+                                      int(row['fost']) + int(row['disab']) + int(row['hmls']) + \
+                                      int(row['pregpar'])
+
+    boo11 = pirlarea['barnum'] > 1
+    pirlarea['barrier'] = boo11.map({True: '1', False: '0'})
+
+# # MSG
+
+    msglow = pd.to_datetime('20200701')
+    msghigh = pd.to_datetime('20210630')
+
+    boo12 = ((pirlarea['1806'] > msglow) & (pirlarea['1806'] < msghigh))
+    pirlarea['msgefl'] = boo12.map({True: '1', False: '0'})
+
+    boo13 = ((pirlarea['1807'] > msglow) & (pirlarea['1807'] < msghigh))
+    pirlarea['msgpost'] = boo13.map({True: '1', False: '0'})
+
+    boo14 = ((pirlarea['1808'] > msglow) & (pirlarea['1808'] < msghigh))
+    pirlarea['msg2nd'] = boo14.map({True: '1', False: '0'})
+
+    boo15 = ((pirlarea['1809'] > msglow) & (pirlarea['1809'] < msghigh))
+    pirlarea['msgmile'] = boo15.map({True: '1', False: '0'})
+
+    boo16 = ((pirlarea['1810'] > msglow) & (pirlarea['1810'] < msghigh))
+    pirlarea['msgskll'] = boo16.map({True: '1', False: '0'})
+
+    boo17 = ((pirlarea['1800'] == 1) &
+                          ((pirlarea['1801'] > msglow) & (pirlarea['1801'] < msghigh)))
+    pirlarea['msgdp1'] = boo17.map({True: '1', False: '0'})
+
+    boo18 = ((pirlarea['1802'] == 1) &
+                          ((pirlarea['1803'] > msglow) & (pirlarea['1803'] < msghigh)))
+    pirlarea['msgdp2'] = boo18.map({True: '1', False: '0'})
+
+    boo19 = ((pirlarea['1804'] == 1) &
+                          ((pirlarea['1805'] > msglow) & (pirlarea['1805'] < msghigh)))
+    pirlarea['msgdp3'] = boo19.map({True: '1', False: '0'})
+
+    for ind, row in pirlarea.iterrows():
+        pirlarea.loc[ind, 'msginpy'] = int(row['msgefl']) + int(row['msgpost']) + int(row['msg2nd']) + \
+                                       int(row['msgmile']) + int(row['msgskll']) + int(row['msgdp1']) + \
+                                       int(row['msgdp2']) + int(row['msgdp3'])
+
+    boo20 = pirlarea['msginpy'] > 0
+    pirlarea['msginpy'] = boo20.map({True: '1', False: '0'})
+
+# # CREDENTIALS
+
+    pirlarea['xtplus1'] = pirlarea['901'] + pd.offsets.DateOffset(years=1)      # what happens when no exit date?
+
+    boo21 = ((pirlarea['1800'] == '2') | (pirlarea['1800'] == '3') | (pirlarea['1800'] == '4') |
+                         (pirlarea['1800'] == '5') | (pirlarea['1800'] == '6') | (pirlarea['1800'] == '7')) & \
+                        (pirlarea['901'] != '') & \
+                        ((pirlarea['1801'] >= pirlarea['900']) & (pirlarea['1801'] <= pirlarea['xtplus1']))
+    pirlarea['cred1'] = boo21.map({True: '1', False: '0'})
+
+    boo22 = ((pirlarea['1802'] == '2') | (pirlarea['1802'] == '3') | (pirlarea['1802'] == '4') |
+                         (pirlarea['1802'] == '5') | (pirlarea['1802'] == '6') | (pirlarea['1802'] == '7')) & \
+                        (pirlarea['901'] != '') & \
+                        ((pirlarea['1803'] >= pirlarea['900']) & (pirlarea['1803'] <= pirlarea['xtplus1']))
+    pirlarea['cred2'] = boo22.map({True: '1', False: '0'})
+
+    boo23 = ((pirlarea['1804'] == '2') | (pirlarea['1804'] == '3') | (pirlarea['1804'] == '4') |
+                         (pirlarea['1804'] == '5') | (pirlarea['1804'] == '6') | (pirlarea['1804'] == '7')) & \
+                        (pirlarea['901'] != '') & \
+                        ((pirlarea['1805'] >= pirlarea['900']) & (pirlarea['1805'] <= pirlarea['xtplus1']))
+    pirlarea['cred3'] = boo23.map({True: '1', False: '0'})
+
+    for ind, row in pirlarea.iterrows():
+        pirlarea.loc[ind, 'credent'] = int(row['cred1']) + int(row['cred2']) + int(row['cred3'])
+    boo24 = pirlarea['credent'] > 0
+    pirlarea['credent'] = boo24.map({True: '1', False: '0'})
+
+    pirlarea.to_csv(f'~/Documents/wk/reports/sam/pirl_py20_{areas[x]}.csv')
